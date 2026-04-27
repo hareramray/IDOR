@@ -332,7 +332,28 @@ properly protected.
 
 ---
 
-## 9. Safety
+## 9. License
+
+Licensed under the **Apache License, Version 2.0**. See [`LICENSE`](LICENSE)
+for the full text.
+
+```
+Copyright 2026 Hareram Ray
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+```
+
+---
+
+## 10. Safety
 
 - **Only scan apps you own or have written authorisation to test.**
 - The scanner sends real PUT/DELETE/etc. requests as User B against
