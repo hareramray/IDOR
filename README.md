@@ -21,11 +21,11 @@ The repo contains three pieces:
                     │
                     │ spawn agent thread per scan
                     ▼
-           IDOR agent (OpenAI tool-calls) ──► Playwright MCP server (npx)
+           IDOR agent (Claude tool use) ──► Playwright MCP server (npx)
                     │                              │
                     │ JSON-RPC over stdio          │ controls
                     ▼                              ▼
-              gpt-4o decides             Real Chromium browser
+           Claude Opus 4.7 decides       Real Chromium browser
                                                    │
                                                    ▼
                                        Target app under test
@@ -38,8 +38,8 @@ The repo contains three pieces:
 
 - **Python 3.12+** (the project was developed against 3.12).
 - **Node.js 18+** with `npx` on PATH (Playwright MCP runs via npx).
-- **OpenAI API key** with access to the model in `OPENAI_MODEL`
-  (default `gpt-4o`). The agent makes function-calling requests.
+- **Anthropic API key** with access to the model in `ANTHROPIC_MODEL`
+  (default `claude-opus-4-7`). The agent makes tool-use requests.
 - **Playwright Chromium** — auto-downloaded the first time the MCP
   server runs; no extra step needed.
 - Windows, macOS, or Linux. Setup scripts ship for both `*.sh` and
@@ -62,7 +62,7 @@ setup.bat
 What the script does:
 
 1. Copies `.env.example` → `backend/.env` (edit it with your real
-   `OPENAI_API_KEY`).
+   `ANTHROPIC_API_KEY`).
 2. Creates `backend/venv`, installs Python deps, runs Django migrations.
 3. `npm install -g @playwright/mcp@latest` — the MCP server.
 4. `npm install` inside `frontend/`.
@@ -96,7 +96,7 @@ Django on `:8000`, so there's no CORS dance in dev.
 ### Stack
 - **Django 4.2 + DRF** — REST API at `/api/`.
 - **Channels + Daphne** — WebSocket transport for live scan logs.
-- **OpenAI Python SDK** — drives the agentic loop with tool-calls.
+- **Anthropic Python SDK** — drives the agentic loop with Claude tool use.
 - **MCP Python SDK** — talks to `@playwright/mcp` over stdio JSON-RPC.
 
 ### Layout
@@ -164,7 +164,7 @@ backend/
 5. **Switch tabs, login as User B** with a fresh session; collect User
    B's IDs too.
 6. **LLM plans** — `PLAN_TESTS_PROMPT` is templated with both users'
-   data; gpt-4o emits a JSON test plan (one test case per attack idea).
+   data; Claude emits a JSON test plan (one test case per attack idea).
 7. **Edge-case generator** appends mechanical variants:
    sequential ±1, base64/hex/url encoding, parameter pollution, body
    injection, content-type swaps, etc. (see `_generate_id_variants`,
@@ -177,13 +177,13 @@ backend/
 9. **Unauthenticated pass** — fresh tab with cookies cleared; if an
    endpoint serves real content (no `login` in the response) it gets
    flagged as a candidate vertical IDOR.
-10. **Summary** — gpt-4o is asked for an executive summary of the
+10. **Summary** — Claude is asked for an executive summary of the
     vulnerable findings; the scan is marked completed.
 
 ### Configuration (`backend/.env`)
 ```dotenv
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-opus-4-7    # or claude-sonnet-4-6 for ~5x cheaper
 DJANGO_SECRET_KEY=change-me
 DEBUG=True
 BROWSER_HEADLESS=false   # false = visible window during scans

@@ -71,6 +71,28 @@ class ScanViewSet(viewsets.ModelViewSet):
         return Response({"status": "started", "scan_id": str(scan.id)})
 
     @action(detail=True, methods=["post"])
+    def rerun(self, request, pk=None):
+        scan = self.get_object()
+        if scan.status == Scan.Status.RUNNING:
+            return Response(
+                {"error": "Scan is already running. Cancel it before rerunning."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        scan.findings.all().delete()
+        scan.logs.all().delete()
+        scan.total_tests = 0
+        scan.vulnerabilities_found = 0
+        scan.status = Scan.Status.RUNNING
+        scan.save()
+
+        thread = threading.Thread(target=_run_scan_in_thread, args=(str(scan.id),))
+        thread.daemon = True
+        thread.start()
+
+        return Response({"status": "rerun_started", "scan_id": str(scan.id)})
+
+    @action(detail=True, methods=["post"])
     def cancel(self, request, pk=None):
         scan = self.get_object()
         if scan.status != Scan.Status.RUNNING:

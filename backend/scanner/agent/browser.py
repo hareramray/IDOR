@@ -113,6 +113,27 @@ class PlaywrightMCPBrowser:
             })
         return result
 
+    def get_anthropic_tools(self) -> list[dict]:
+        """
+        Convert MCP tools into Anthropic tool-use format.
+        """
+        tools = []
+        for tool in self._tools.values():
+            schema = tool.inputSchema if hasattr(tool, "inputSchema") else {}
+            if not isinstance(schema, dict):
+                schema = {"type": "object", "properties": {}}
+            if "type" not in schema:
+                schema["type"] = "object"
+            if "properties" not in schema:
+                schema["properties"] = {}
+
+            tools.append({
+                "name": tool.name,
+                "description": (tool.description or "")[:1024],
+                "input_schema": schema,
+            })
+        return tools
+
     def get_openai_tools(self) -> list[dict]:
         """
         Convert MCP tools into OpenAI function-calling format so the LLM

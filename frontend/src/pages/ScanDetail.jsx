@@ -58,6 +58,14 @@ export default function ScanDetail() {
     fetchScan()
   }
 
+  const handleRerun = async () => {
+    if (!confirm('Rerun this scan? Existing findings and logs will be cleared.')) return
+    await scanApi.rerun(id)
+    setLogs([])
+    lastLogTime.current = null
+    fetchScan()
+  }
+
   const handleCancel = async () => {
     await scanApi.cancel(id)
     fetchScan()
@@ -93,6 +101,9 @@ export default function ScanDetail() {
           )}
           {scan.status === 'running' && (
             <button className="btn btn-danger" onClick={handleCancel}>Cancel</button>
+          )}
+          {(scan.status === 'completed' || scan.status === 'failed' || scan.status === 'cancelled') && (
+            <button className="btn btn-primary" onClick={handleRerun}>Rerun Scan</button>
           )}
           <span className={`badge badge-${scan.status}`}>{scan.status}</span>
         </div>

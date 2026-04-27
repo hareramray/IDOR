@@ -31,6 +31,14 @@ export default function Dashboard() {
     fetchScans()
   }
 
+  const handleRerun = async (e, id) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm('Rerun this scan? Existing findings and logs will be cleared.')) return
+    await scanApi.rerun(id)
+    fetchScans()
+  }
+
   if (loading) {
     return <div className="empty-state"><div className="spinner" /></div>
   }
@@ -82,9 +90,16 @@ export default function Dashboard() {
                     {new Date(scan.created_at).toLocaleDateString()}
                   </td>
                   <td>
-                    <button className="btn btn-sm btn-outline" onClick={(e) => handleDelete(e, scan.id)}>
-                      Delete
-                    </button>
+                    <div className="flex gap-2">
+                      {(scan.status === 'completed' || scan.status === 'failed' || scan.status === 'cancelled') && (
+                        <button className="btn btn-sm btn-outline" onClick={(e) => handleRerun(e, scan.id)}>
+                          Rerun
+                        </button>
+                      )}
+                      <button className="btn btn-sm btn-outline" onClick={(e) => handleDelete(e, scan.id)}>
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

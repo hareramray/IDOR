@@ -83,7 +83,14 @@ REST_FRAMEWORK = {
     ],
 }
 
-# OpenAI
+# LLM provider — "anthropic" (default) or "openai"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic").lower()
+
+# Anthropic (Claude)
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-4-7")
+
+# OpenAI (legacy)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 

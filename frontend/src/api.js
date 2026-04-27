@@ -10,6 +10,7 @@ export const scanApi = {
   get: (id) => api.get(`/scans/${id}/`),
   create: (data) => api.post('/scans/', data),
   start: (id) => api.post(`/scans/${id}/start/`),
+  rerun: (id) => api.post(`/scans/${id}/rerun/`),
   cancel: (id) => api.post(`/scans/${id}/cancel/`),
   delete: (id) => api.delete(`/scans/${id}/`),
   findings: (id, severity) => {

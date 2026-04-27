@@ -6,7 +6,7 @@ echo "=== IDOR Scanner Setup ==="
 # 1. Copy .env if missing
 if [ ! -f backend/.env ]; then
   cp .env.example backend/.env
-  echo "[+] Created backend/.env from template — edit it with your OPENAI_API_KEY"
+  echo "[+] Created backend/.env from template — edit it with your ANTHROPIC_API_KEY"
 fi
 
 # 2. Python backend

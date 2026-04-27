@@ -1,12 +1,12 @@
 """
-Core IDOR Testing Agent — OpenAI function-calling + Playwright MCP.
+Core IDOR Testing Agent — Anthropic Claude tool use + Playwright MCP.
 
 Architecture:
-  OpenAI (gpt-4o) ←→ Agent loop ←→ Playwright MCP server (headed browser)
+  Claude (Opus 4.7) ←→ Agent loop ←→ Playwright MCP server (headed browser)
 
 Flow:
   1. Start Playwright MCP server (headed by default)
-  2. Agent uses OpenAI tool_calls to drive the browser via MCP
+  2. Agent uses Claude tool_use blocks to drive the browser via MCP
   3. Login as User A & User B through the real browser
   4. Collect resource IDs from each user's endpoints
   5. LLM generates comprehensive IDOR test plan
@@ -23,7 +23,7 @@ import hashlib
 import traceback
 from urllib.parse import quote
 
-from openai import OpenAI
+from anthropic import Anthropic
 from django.conf import settings
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -42,13 +42,13 @@ MAX_AGENT_STEPS = 50
 
 
 class IDORAgent:
-    """Orchestrates IDOR vulnerability testing using OpenAI + Playwright MCP."""
+    """Orchestrates IDOR vulnerability testing using Claude + Playwright MCP."""
 
     def __init__(self, scan_id: str):
         self.scan_id = scan_id
         self.scan: Scan = None
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_MODEL
+        self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self.model = settings.ANTHROPIC_MODEL
         self.browser: PlaywrightMCPBrowser = None
         self.channel_layer = get_channel_layer()
         self.total_tests = 0
@@ -95,84 +95,82 @@ class IDORAgent:
     def log_debug(self, msg, details=None):
         self._log("debug", msg, details)
 
-    # ── OpenAI + MCP Agentic Loop ────────────────────────────────────
+    # ── Claude + MCP Agentic Loop ────────────────────────────────────
 
     async def _run_agent_loop(self, task_prompt: str, extra_system: str = "") -> str:
         """
-        Send a prompt to OpenAI with the Playwright MCP tools available.
-        The LLM can call browser tools iteratively until it returns a text
-        response (no more tool_calls).
-
-        Returns the final assistant text content.
+        Send a prompt to Claude with the Playwright MCP tools available.
+        Claude emits tool_use blocks which we execute via MCP and feed back
+        as tool_result blocks until the model returns a final text response.
         """
-        openai_tools = self.browser.get_openai_tools()
+        tools = self.browser.get_anthropic_tools()
         system = SYSTEM_PROMPT
         if extra_system:
             system += "\n\n" + extra_system
 
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": task_prompt},
-        ]
+        messages = [{"role": "user", "content": task_prompt}]
 
         for step in range(MAX_AGENT_STEPS):
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                tools=openai_tools if openai_tools else None,
-                temperature=0.2,
-                max_tokens=4096,
-            )
-            choice = response.choices[0]
-            msg = choice.message
+            kwargs = {
+                "model": self.model,
+                "max_tokens": 4096,
+                "system": system,
+                "messages": messages,
+            }
+            if tools:
+                kwargs["tools"] = tools
 
-            # If no tool calls, we're done
-            if not msg.tool_calls:
-                return msg.content or ""
+            response = self.client.messages.create(**kwargs)
 
-            # Append the assistant message with tool_calls
-            messages.append(msg.model_dump())
+            # If no tool use, we're done — return concatenated text blocks
+            if response.stop_reason != "tool_use":
+                return "".join(
+                    block.text for block in response.content if block.type == "text"
+                )
 
-            # Execute each tool call via MCP
-            for tc in msg.tool_calls:
-                fn_name = tc.function.name
-                try:
-                    fn_args = json.loads(tc.function.arguments) if tc.function.arguments else {}
-                except json.JSONDecodeError:
-                    fn_args = {}
+            # Echo the assistant turn (must include the tool_use blocks verbatim)
+            messages.append({"role": "assistant", "content": response.content})
 
+            # Execute each tool_use and collect tool_result blocks
+            tool_results = []
+            for block in response.content:
+                if block.type != "tool_use":
+                    continue
+
+                fn_name = block.name
+                fn_args = block.input or {}
                 self.log_debug(f"MCP tool: {fn_name}({json.dumps(fn_args)[:200]})")
 
                 result = await self.browser.call_tool(fn_name, fn_args)
-
-                # Flatten content into a string for OpenAI
                 result_text = "\n".join(
                     item.get("text", str(item)) for item in result.get("content", [])
                 )
-                if result.get("isError"):
-                    result_text = f"[ERROR] {result_text}"
 
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": result_text[:8000],  # Truncate for context window
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result_text[:8000],
+                    "is_error": bool(result.get("isError")),
                 })
+
+            messages.append({"role": "user", "content": tool_results})
 
         return "[Agent reached maximum steps without completing]"
 
     # ── Simple LLM Call (no tools) ───────────────────────────────────
 
-    def _ask_llm(self, user_prompt: str, temperature: float = 0.2) -> str:
-        response = self.client.chat.completions.create(
+    def _ask_llm(self, user_prompt: str, temperature: float | None = None) -> str:
+        # `temperature` is accepted for backwards compat but ignored — Opus 4.7
+        # rejects it and other Claude models don't need it tuned for this use.
+        response = self.client.messages.create(
             model=self.model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=temperature,
             max_tokens=4096,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_prompt}],
         )
-        return response.choices[0].message.content.strip()
+        return "".join(
+            block.text for block in response.content if block.type == "text"
+        ).strip()
 
     def _parse_json_response(self, text: str):
         text = re.sub(r"```json\s*", "", text)
@@ -226,7 +224,7 @@ class IDORAgent:
 
     async def _login_user(self, label: str, credentials: dict, base_url: str) -> str:
         """
-        Use the OpenAI agent loop to perform a real browser login.
+        Use the Claude agent loop to perform a real browser login.
         The LLM autonomously navigates, fills forms, and clicks buttons
         via Playwright MCP tools.
         """
@@ -610,7 +608,7 @@ Return ONLY the JSON object. No markdown fences, no explanation.
                 user_b_resources=json.dumps(user_b_resources, indent=2, default=str),
             )
 
-            test_plan_text = self._ask_llm(plan_prompt, temperature=0.3)
+            test_plan_text = self._ask_llm(plan_prompt)
             try:
                 test_plan = self._parse_json_response(test_plan_text)
             except json.JSONDecodeError:
