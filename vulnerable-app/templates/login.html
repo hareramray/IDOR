@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>VulnVault — Login</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #1e1e2e; color: #cdd6f4; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #313244; padding: 2rem; border-radius: 8px; width: 320px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        h1 { margin-top: 0; color: #f5c2e7; }
+        label { display: block; margin: 0.75rem 0 0.25rem; font-size: 0.9rem; }
+        input { width: 100%; padding: 0.5rem; box-sizing: border-box; background: #1e1e2e; border: 1px solid #45475a; border-radius: 4px; color: #cdd6f4; }
+        button { margin-top: 1rem; width: 100%; padding: 0.6rem; background: #89b4fa; color: #1e1e2e; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .error { color: #f38ba8; margin-top: 0.5rem; }
+        .hint { font-size: 0.8rem; color: #a6adc8; margin-top: 1rem; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>VulnVault</h1>
+        <form method="post" action="/login">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autofocus>
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password">
+            <button type="submit">Sign in</button>
+            {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        </form>
+        <div class="hint">
+            Demo accounts:<br>
+            alice / alicepass<br>
+            bob / bobpass<br>
+            admin / adminpass
+        </div>
+    </div>
+</body>
+</html>

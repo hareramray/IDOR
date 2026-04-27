@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>VulnVault — Dashboard</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #1e1e2e; color: #cdd6f4; margin: 0; padding: 2rem; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        h1 { color: #f5c2e7; margin: 0; }
+        h2 { color: #89b4fa; border-bottom: 1px solid #45475a; padding-bottom: 0.3rem; }
+        a { color: #89b4fa; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        ul { list-style: none; padding-left: 0; }
+        li { margin: 0.4rem 0; padding: 0.5rem; background: #313244; border-radius: 4px; }
+        .meta { color: #a6adc8; font-size: 0.85rem; margin-left: 0.5rem; }
+        .logout { background: #f38ba8; color: #1e1e2e; padding: 0.4rem 0.8rem; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome, {{ user.username }}{% if user.is_admin %} (admin){% endif %}</h1>
+        <a class="logout" href="/logout">Logout</a>
+    </header>
+
+    <h2>Your notes</h2>
+    <ul>
+        {% for note in notes %}
+            <li>
+                <a href="/api/notes/{{ note.id }}" data-id="{{ note.id }}">
+                    Note #{{ note.id }} — {{ note.title }}
+                </a>
+                <span class="meta">
+                    [<a href="/api/secure/notes/{{ note.id }}">secure</a>]
+                </span>
+            </li>
+        {% else %}
+            <li>No notes yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Your invoices</h2>
+    <ul>
+        {% for inv in invoices %}
+            <li>
+                <a href="/api/invoices/{{ inv.id }}" data-id="{{ inv.id }}">
+                    Invoice #{{ inv.id }} — ${{ '%.2f' | format(inv.amount) }} — {{ inv.description }}
+                </a>
+            </li>
+        {% else %}
+            <li>No invoices.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Your profile</h2>
+    <ul>
+        <li>
+            <a href="/api/users/{{ user.id }}" data-id="{{ user.id }}">
+                View profile (user #{{ user.id }})
+            </a>
+        </li>
+    </ul>
+</body>
+</html>

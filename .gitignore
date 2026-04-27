@@ -1,0 +1,72 @@
+# ── Secrets ─────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+backend/.env
+vulnerable-app/.env
+*.pem
+*.key
+
+# ── Python ──────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# ── Django ──────────────────────────────────────────────────────────
+*.sqlite3
+*.sqlite3-journal
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+backend/local_settings.py
+
+# ── Vulnerable app artefacts ────────────────────────────────────────
+vulnerable-app/vulnvault.db
+vulnerable-app/instance/
+
+# ── Node / frontend ─────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.vite/
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ── Playwright ──────────────────────────────────────────────────────
+playwright-report/
+test-results/
+.playwright*/
+
+# ── IDE / OS ────────────────────────────────────────────────────────
+.idea/
+.vscode/
+!.vscode/settings.json.example
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs / scratch ──────────────────────────────────────────────────
+*.log
+.tmp/
+tmp/
+*.bak
+*.orig
+*.rej
